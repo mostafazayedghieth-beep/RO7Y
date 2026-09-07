@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Birthday Surprise ✨💖</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Almarai:wght@300;400;700;800&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --bg-pink: #fff0f5;
+            --pastel-pink: #ffd1dc;
+            --accent-pink: #ff6b8b;
+            --dark-pink: #d84374;
+            --card-bg: rgba(255, 255, 255, 0.95);
+            --text-color: #5a3e47;
+            --shadow: 0 10px 30px rgba(255, 182, 193, 0.4);
+            --radius: 24px;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; -webkit-tap-highlight-color: transparent; }
+
+        body {
+            font-family: 'Almarai', sans-serif;
+            background-color: var(--bg-pink);
+            color: var(--text-color);
+            min-height: 100vh;
+            display: flex; justify-content: center; align-items: center; overflow: hidden;
+        }
+
+        #roseCanvas { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 1; }
+        
+        /* Canvas الخاص بتساقط 4.gif بشكل طبيعي فوق الواجهة */
+        #gifFallingCanvas { 
+            position: fixed; 
+            top: 0; 
+            left: 0; 
+            width: 100%; 
+            height: 100%; 
+            pointer-events: none; 
+            z-index: 999; 
+        }
+
+        .container { width: 90%; max-width: 440px; margin: 20px auto; position: relative; z-index: 10; }
+
+        .section-card {
+            background: var(--card-bg);
+            backdrop-filter: blur(10px);
+            border-radius: var(--radius);
+            padding: 30px 20px;
+            box-shadow: var(--shadow);
+            text-align: center;
+            display: none;
+            opacity: 0;
+            transform: scale(0.95);
+            transition: opacity 0.4s ease, transform 0.4s ease;
+        }
+
+        .section-card.active { display: block; opacity: 1; transform: scale(1); }
+
+        h2 { color: var(--dark-pink); font-size: 1.35rem; margin-bottom: 20px; font-weight: 700; }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #ff758c, #ff7eb3);
+            color: white; border: none; padding: 14px 28px; font-size: 1.05rem; font-weight: 700;
+            border-radius: 50px; cursor: pointer; box-shadow: 0 6px 20px rgba(255, 117, 140, 0.4);
+            margin-top: 20px; width: 100%; font-family: 'Almarai', sans-serif;
+        }
+
+        .pin-dots { display: flex; justify-content: center; gap: 15px; margin: 20px 0 30px 0; }
+        .dot { width: 18px; height: 18px; border-radius: 50%; border: 2px solid var(--accent-pink); }
+        .dot.filled { background: var(--accent-pink); }
+
+        .keypad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; max-width: 280px; margin: 0 auto; }
+        .key-btn { background: white; border: 1px solid var(--pastel-pink); padding: 12px 0; border-radius: 16px; cursor: pointer; font-family: 'Almarai', sans-serif; font-weight: 700; }
+
+        .alert-msg { margin-top: 15px; font-weight: 700; min-height: 25px; }
+        .alert-msg.error { color: #e74c3c; }
+        .alert-msg.success { color: #2ecc71; font-size: 1.15rem; }
+
+        .love-slider { -webkit-appearance: none; width: 100%; height: 12px; border-radius: 10px; background: #ffe3e8; margin-top: 15px; }
+        .love-slider::-webkit-slider-thumb { -webkit-appearance: none; width: 30px; height: 30px; border-radius: 50%; background: var(--accent-pink); cursor: pointer; }
+        .love-val { font-size: 2.5rem; font-weight: 800; color: var(--dark-pink); display: block;}
+        
+        /* تنسيق صور الـ GIF بدون خلفية */
+        .gif-display {
+            width: 140px;
+            height: 140px;
+            margin: 0 auto 10px auto;
+            display: block;
+            object-fit: contain;
+            background: transparent;
+            mix-blend-mode: multiply;
+        }
+
+        .gift-item { background: #fff; border: 1.5px solid #ffe3e8; border-radius: 18px; padding: 14px; display: flex; align-items: center; justify-content: center; cursor: pointer; margin-bottom: 10px; }
+        .gift-action-btn { background: #ffe8ee; color: var(--dark-pink); padding: 8px 16px; border-radius: 12px; font-size: 0.9rem; font-weight: 700; width: 100%; }
+
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.3); backdrop-filter: blur(5px); z-index: 1000; display: none; justify-content: center; align-items: center; }
+        .modal-overlay.active { display: flex; }
+        .modal-card { background: white; width: 85%; max-width: 340px; border-radius: 24px; padding: 25px; text-align: center; max-height: 90vh; overflow-y: auto; }
+        .music-link-btn { display: inline-block; background: #ff4757; color: white; text-decoration: none; padding: 10px 20px; border-radius: 20px; font-weight: 700; margin-top: 15px; }
+
+        .gift-bouquet-img {
+            width: 100%;
+            max-width: 250px;
+            height: auto;
+            border-radius: 16px;
+            margin: 15px 0;
+            box-shadow: 0 8px 20px rgba(255, 107, 139, 0.25);
+            object-fit: cover;
+        }
+
+        /* تنسيق الفيديو داخل النافذة */
+        .gift-video {
+            width: 100%;
+            max-width: 280px;
+            border-radius: 16px;
+            margin: 15px 0;
+            box-shadow: 0 8px 20px rgba(255, 107, 139, 0.25);
+        }
+
+        .letter-paper { background: #fffdf9; border-radius: 16px; padding: 20px; border: 1px solid #ebdccb; text-align: right; line-height: 1.8; margin: 15px 0; }
+        
+        .flower-cloud { position: fixed; width: 100%; height: 50vh; background-color: #f7abbf; z-index: 9999; display: flex; align-items: center; justify-content: center; font-size: 2rem; transition: transform 0.75s ease; flex-wrap: wrap; text-align: center; overflow: hidden;}
+        .flower-cloud.top { top: -50vh; border-bottom: 5px solid #ff758c; }
+        .flower-cloud.bottom { bottom: -50vh; border-top: 5px solid #ff758c; }
+        .flower-transition-overlay.active .top { transform: translateY(50vh); }
+        .flower-transition-overlay.active .bottom { transform: translateY(-50vh); }
+    </style>
+</head>
+<body>
+
+    <canvas id="roseCanvas"></canvas>
+    <canvas id="gifFallingCanvas"></canvas>
+
+    <div class="flower-transition-overlay" id="flowerTransition">
+        <div class="flower-cloud top">🌸🌸🌸🌸🌸🌸🌸🌸🌸🌸🌸🌸🌸🌸🌸🌸</div>
+        <div class="flower-cloud bottom">🌸🌸🌸🌸🌸🌸🌸🌸🌸🌸🌸🌸🌸🌸🌸🌸</div>
+    </div>
+
+    <div class="container">
+        <div id="part1" class="section-card active">
+            <h2>قولي كلمة السر ي سكر 🔐</h2>
+            <div class="pin-dots"><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>
+            <div class="keypad">
+                <button class="key-btn" onclick="pressKey('1')">1</button><button class="key-btn" onclick="pressKey('2')">2</button><button class="key-btn" onclick="pressKey('3')">3</button>
+                <button class="key-btn" onclick="pressKey('4')">4</button><button class="key-btn" onclick="pressKey('5')">5</button><button class="key-btn" onclick="pressKey('6')">6</button>
+                <button class="key-btn" onclick="pressKey('7')">7</button><button class="key-btn" onclick="pressKey('8')">8</button><button class="key-btn" onclick="pressKey('9')">9</button>
+                <button class="key-btn" onclick="clearPin()">مسح</button><button class="key-btn" onclick="pressKey('0')">0</button><button class="key-btn" onclick="backspace()">⌫</button>
+            </div>
+            <div id="pinAlert" class="alert-msg"></div>
+            <div id="nextBtnPart1" style="display: none;"><button class="btn-primary" onclick="triggerFlowerTransition(2)">يلا عشان الهدية🥳🥳 ➡️</button></div>
+        </div>
+
+        <div id="part2" class="section-card">
+            <h2>بتحبيني قد ايه؟ 💖</h2>
+            <img id="gifDisplay" class="gif-display" src="5.gif" alt="GIF">
+            <span class="love-val" id="loveValDisplay">0%</span>
+            <input type="range" min="0" max="100" value="0" class="love-slider" id="loveRange" oninput="updateLoveTest(this.value)">
+            <div id="loveFeedback" style="margin-top:20px; font-weight:700;">اسحبي الشريط!</div>
+            <div id="nextBtnPart2" style="display: none;"><button class="btn-primary" onclick="triggerFlowerTransition(3)">شوفي اللي بعده ي سكر ➡️</button></div>
+        </div>
+
+        <div id="part3" class="section-card">
+            <h2>افتحي هديتك يعمري❤ 🎁</h2>
+            <div class="gifts-grid">
+                <div class="gift-item" onclick="openModal('candle')"><div class="gift-action-btn">طفي الشمع ي سُكرتي ❤ 🎂</div></div>
+                <div class="gift-item" onclick="openModal('bouquet')"><div class="gift-action-btn">باقة ورد 💐</div></div>
+                <div class="gift-item" onclick="openModal('music')"><div class="gift-action-btn">أغنية 🎵</div></div>
+                <div class="gift-item" onclick="openModal('letter')"><div class="gift-action-btn">رسالة 💌</div></div>
+            </div>
+            <button class="btn-primary" onclick="triggerFlowerTransition(4)">الرسالة الأخيرة 🎈</button>
+        </div>
+
+        <div id="part4" class="section-card">
+            <h2>عيد ميلاد سعيد يا روحي 🎂</h2>
+            <div class="letter-paper">
+                يوم مميز وتاريخ مميز وشخص مميز... كل سنه وانتِ معايا ي روحي❤.. عقبال م نحتفل بيكي واحنا ف بيتنا ي روح قلبي❤... ديما وحشاني حتى لو قدامي... اوعدك ان انا هكون خير زوج وخير صاحب وخير أخ ليكي وهغنيكي عن الدنيا كلها وديما هبقى معاكي ف أي وقت تحتاجيني فيه... عمري م هبطل احبك ابدا وهسعى على قد م اقدر ان انا اسعدك وافرحك لأنك تستحقي كل حاجة حلوة ف الدنيا❤ .... بحبك ❤
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="giftModal">
+        <div class="modal-card">
+            <h3 id="modalTitle">هدية</h3>
+            <p id="modalBody" style="margin: 15px 0;"></p>
+            <div id="modalFooter"></div>
+            <button class="btn-primary" onclick="closeModal()">إغلاق</button>
+        </div>
+    </div>
+
+    <script>
+        // Rose Background Logic
+        const canvas = document.getElementById('roseCanvas');
+        const ctx = canvas.getContext('2d');
+        let w, h;
+        function resize() { 
+            w = canvas.width = window.innerWidth; 
+            h = canvas.height = window.innerHeight; 
+        }
+        window.onresize = () => {
+            resize();
+            resizeGifCanvas();
+        }; 
+        resize();
+
+        const petals = Array.from({length: 40}, () => ({x: Math.random()*w, y: Math.random()*h, size: Math.random()*20+15, speedY: Math.random()*1.5+0.5, opacity: Math.random()}));
+        
+        function animate() {
+            ctx.clearRect(0, 0, w, h);
+            petals.forEach(p => {
+                ctx.globalAlpha = p.opacity;
+                ctx.font = p.size + "px serif";
+                ctx.fillText("🌸", p.x, p.y);
+                p.y += p.speedY;
+                if(p.y > h) p.y = -20;
+            });
+            requestAnimationFrame(animate);
+        } animate();
+
+        // -------------------------------------------------------------
+        // تساقط 4.gif بشكل طبيعي (مثل تأثير الورود)
+        // -------------------------------------------------------------
+        const gCanvas = document.getElementById('gifFallingCanvas');
+        const gCtx = gCanvas.getContext('2d');
+        let gw, gh;
+
+        function resizeGifCanvas() {
+            gw = gCanvas.width = window.innerWidth;
+            gh = gCanvas.height = window.innerHeight;
+        }
+        resizeGifCanvas();
+
+        const fallingImg = new Image();
+        fallingImg.src = '4.gif';
+
+        const gifItems = Array.from({length: 20}, () => ({
+            x: Math.random() * window.innerWidth,
+            y: Math.random() * window.innerHeight,
+            size: Math.random() * 15 + 25,
+            speedY: Math.random() * 1.5 + 1,
+            opacity: Math.random() * 0.5 + 0.5
+        }));
+
+        function animateFallingGif() {
+            gCtx.clearRect(0, 0, gw, gh);
+
+            gifItems.forEach(item => {
+                gCtx.globalAlpha = item.opacity;
+                if (fallingImg.complete) {
+                    gCtx.drawImage(fallingImg, item.x, item.y, item.size, item.size);
+                }
+                item.y += item.speedY;
+                
+                // إعادة الصورة من الأعلى عندما تتجاوز الشاشة (سقوط طبيعي مستمر)
+                if(item.y > gh) {
+                    item.y = -30;
+                    item.x = Math.random() * gw;
+                }
+            });
+
+            requestAnimationFrame(animateFallingGif);
+        }
+        animateFallingGif();
+
+        // -------------------------------------------------------------
+        // التنقل والمنطق الرئيسي
+        // -------------------------------------------------------------
+        function triggerFlowerTransition(n) {
+            document.getElementById('flowerTransition').classList.add('active');
+            setTimeout(() => {
+                document.querySelectorAll('.section-card').forEach(c => c.classList.remove('active'));
+                document.getElementById('part'+n).classList.add('active');
+                document.getElementById('flowerTransition').classList.remove('active');
+            }, 800);
+        }
+
+        let currentPin = "";
+        function pressKey(n) { 
+            if(currentPin.length < 4) { 
+                currentPin += n; 
+                updateDots(); 
+                if(currentPin.length === 4) {
+                    if(currentPin === "9911") {
+                        document.getElementById('pinAlert').textContent = "شطووووووووورة ي عمري❤";
+                        document.getElementById('pinAlert').className = "alert-msg success";
+                        document.getElementById('nextBtnPart1').style.display = "block";
+                    } else {
+                        document.getElementById('pinAlert').textContent = "معلش ي حبيبتي حاولي تاني";
+                        document.getElementById('pinAlert').className = "alert-msg error";
+                        setTimeout(() => { clearPin(); }, 1500);
+                    }
+                }
+            } 
+        }
+        function backspace() { currentPin=currentPin.slice(0,-1); updateDots(); }
+        function clearPin() { currentPin=""; updateDots(); document.getElementById('pinAlert').textContent=""; }
+        function updateDots() { document.querySelectorAll('.dot').forEach((d,i)=> i < currentPin.length ? d.classList.add('filled') : d.classList.remove('filled')); }
+
+        function updateLoveTest(v) {
+            const display = document.getElementById('loveValDisplay');
+            const feedback = document.getElementById('loveFeedback');
+            const nextBtn = document.getElementById('nextBtnPart2');
+            const gifDisplay = document.getElementById('gifDisplay');
+            
+            let val = parseInt(v);
+
+            if (val === 0) {
+                display.textContent = "0%";
+                feedback.textContent = "اسحبي الشريط!";
+                gifDisplay.src = "5.gif";
+                nextBtn.style.display = "none";
+            } else if (val < 50) {
+                display.textContent = val + "%";
+                feedback.textContent = "لا والله ؟!🙁";
+                gifDisplay.src = "1.gif";
+                nextBtn.style.display = "none";
+            } else if (val < 99) {
+                display.textContent = val + "%";
+                feedback.textContent = "برضو نص نص؟😥";
+                gifDisplay.src = "2.gif";
+                nextBtn.style.display = "none";
+            } else {
+                display.textContent = "1000%";
+                feedback.textContent = "وانا كمان بمووووووت فيكي ي عمري ❤";
+                gifDisplay.src = "3.gif";
+                nextBtn.style.display = "block";
+            }
+        }
+
+        function openModal(type) {
+            const modal = document.getElementById('giftModal');
+            const title = document.getElementById('modalTitle');
+            const body = document.getElementById('modalBody');
+            const footer = document.getElementById('modalFooter');
+            modal.classList.add('active');
+            footer.innerHTML = "";
+            
+            if(type=='candle') { 
+                title.textContent="طفي الشمع ي سُكرتي ❤"; 
+                body.textContent="اتمني أمنية وطفي الشمعة يا قلبي 🎂✨"; 
+                footer.innerHTML='<video src="1.mp4" class="gift-video" controls autoplay playsinline></video>';
+            }
+            else if(type=='bouquet') { 
+                title.textContent="باقة ورد 💐"; 
+                body.textContent="أنتي أحلى واحدة في حياتي 💖"; 
+                footer.innerHTML='<img src="4.jpg" alt="باقة ورد" class="gift-bouquet-img">';
+            }
+            else if(type=='music') { 
+                title.textContent="أغنية 🎵"; 
+                body.textContent="أغنية رامي صبري"; 
+                footer.innerHTML='<a href="https://youtu.be/LF13_TQUxLU?t=51" target="_blank" class="music-link-btn">استمعي الآن 🎧</a>'; 
+            }
+            else { 
+                title.textContent="رسالة 💌"; 
+                body.textContent="كل سنة وأنتي طيبة يا قلبي ❤"; 
+            }
+        }
+
+        function closeModal() { 
+            const modal = document.getElementById('giftModal');
+            // إيقاف الفيديو عند غلق النافذة
+            const video = modal.querySelector('video');
+            if(video) {
+                video.pause();
+            }
+            modal.classList.remove('active'); 
+        }
+    </script>
+</body>
+</html>
